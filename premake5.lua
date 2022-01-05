@@ -28,6 +28,7 @@ project(projectName)
 	{
 		"source/external/**",
 		"source/**",
+		"shader/**"
 	}
 	
 	includedirs
