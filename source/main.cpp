@@ -19,7 +19,7 @@ void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mousebutton_callback(GLFWwindow* window, int button, int action, int mods);
-int glhUnProjectVecf(float winx, float winy, float winz, float winw, float* modelview, float* projection, int* viewport, float* objectCoordinate);
+int glhUnProjectVecf(float winx, float winy, float winz, float* modelview, float* projection, int* viewport, float* objectCoordinate);
 void MultiplyMatrixByVector4by4OpenGL_FLOAT(float* resultvector, const float* matrix, const float* pvector);
 void MultiplyMatrices4by4OpenGL_FLOAT(float* result, float* matrix1, float* matrix2);
 int glhInvertMatrixf2(float* m, float* out);
@@ -299,7 +299,6 @@ glm::vec3 getViewPos(glm::mat4 pro, glm::mat4 view)
     GLint viewPort[4] = { 0, 0, SCR_WIDTH, SCR_HEIGHT };
 
     GLfloat winX, winY, winZ;
-    float winW = 0.0f;
     double objectX = 0.0, objectY = 0.0, objectZ = 0.0;
     winX = (float)curMouseX;
     winY = (float)viewPort[3] - (float)curMouseY - 1.0f;
@@ -307,7 +306,7 @@ glm::vec3 getViewPos(glm::mat4 pro, glm::mat4 view)
     glm::vec3 worldPos = glm::vec3(objectX, objectY, objectZ);
     glReadBuffer(GL_BACK);
     glReadPixels(int(winX),int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
-    glhUnProjectVecf(winX, winY, winZ, winW, glm::value_ptr(view), glm::value_ptr(pro), viewPort, glm::value_ptr(worldPos));
+    glhUnProjectVecf(winX, winY, winZ, glm::value_ptr(view), glm::value_ptr(pro), viewPort, glm::value_ptr(worldPos));
     return worldPos;
 }
 
@@ -349,7 +348,7 @@ void drawLine(glm::vec3 endPos, Shader shader)
 
 // some API
 // -----------------------------------------------------------
-int glhUnProjectVecf(float winx, float winy, float winz, float winw, float* modelview, float* projection, int* viewport, float* objectCoordinate)
+int glhUnProjectVecf(float winx, float winy, float winz, float* modelview, float* projection, int* viewport, float* objectCoordinate)
 {
     //Transformation matrices
     float m[16], A[16];
@@ -364,7 +363,7 @@ int glhUnProjectVecf(float winx, float winy, float winz, float winw, float* mode
     in[0] = (winx - (float)viewport[0]) / (float)viewport[2] * 2.0 - 1.0;
     in[1] = (winy - (float)viewport[1]) / (float)viewport[3] * 2.0 - 1.0;
     in[2] = 2.0 * winz - 1.0;
-    in[3] = winw;
+    in[3] = 1.0;
     //Objects coordinates
     MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
     if (out[3] == 0.0)
