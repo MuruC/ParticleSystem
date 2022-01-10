@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <vector>
 
@@ -36,25 +37,38 @@ public:
 	float MouseSensitivity;
 	float Zoom;
 
-	// constructor with vectors
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	glm::vec3 cameraPosition = { 0.0f, 0.0f, 0.0f };
+	glm::mat4 projectionMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+	glm::mat4 viewMatirx = glm::mat4(1.0f);
+	glm::mat4 viewProjectionMatrix = glm::mat4(1.0f);
+
+	Camera()
 	{
-		Position = position;
-		WorldUp = up;
-		Yaw = yaw;
-		Pitch = pitch;
-		updateCameraVectors();
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), cameraPosition);
+		viewMatirx = glm::inverse(transform);
+		viewProjectionMatrix = projectionMatrix * viewMatirx;
 	}
 
-	// constructor with scalar values
-	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
-	{
-		Position = glm::vec3(posX, posY, posZ);
-		WorldUp = glm::vec3(upX, upY, upZ);
-		Yaw = yaw;
-		Pitch = pitch;
-		updateCameraVectors();
-	}
+	const glm::mat4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
+	// constructor with vectors
+	//Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	//{
+	//	Position = position;
+	//	WorldUp = up;
+	//	Yaw = yaw;
+	//	Pitch = pitch;
+	//	updateCameraVectors();
+	//}
+	//
+	//// constructor with scalar values
+	//Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	//{
+	//	Position = glm::vec3(posX, posY, posZ);
+	//	WorldUp = glm::vec3(upX, upY, upZ);
+	//	Yaw = yaw;
+	//	Pitch = pitch;
+	//	updateCameraVectors();
+	//}
 
 	// returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix()
@@ -100,6 +114,13 @@ public:
 			Zoom = 1.0f;
 		if (Zoom > 45.0f)
 			Zoom = 45.0f;
+	}
+
+	void RecalculateViewMatrix()
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), cameraPosition);
+		viewMatirx = transform;
+		viewProjectionMatrix = projectionMatrix * viewMatirx;
 	}
 
 private:
