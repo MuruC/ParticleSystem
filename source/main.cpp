@@ -1,7 +1,5 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "shader.h"
 #include "camera.h"
 #include <iostream>
@@ -12,6 +10,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "glutUtil.h"
+#include "particleSystem.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -39,6 +38,10 @@ float lastFrame = 0.0f;
 float curMouseX = lastX;
 float curMouseY = lastY;
 bool clickMouse = false;
+
+//particle props
+ParticleProps particleProps;
+ParticleSystem* particleSystem = new ParticleSystem;
 
 // origin square
 float vertices[] = {
@@ -97,35 +100,6 @@ int main()
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
-    // build and compile our shader program
-    // ------------------------------------
-    Shader ourShader("../../shader/shaders.vs", "../../shader/shaders.fs");
-
-    unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // tell opengl for each sampler to which texture unit it belongs (only has to be done once)
-    ourShader.use(); // don't forget to activate/use the shader before setting uniforms
-    // either set it manually like so:
-    glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
-    // or set it via the texture class
-    ourShader.setInt("texture2",1);
-
     // Initialize ImGUI
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -150,22 +124,13 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Tell OpenGL a new frame is about to begin
-        //ImGui_ImplOpenGL3_NewFrame();
-        //ImGui_ImplGlfw_NewFrame();
-        //ImGui::NewFrame();
-
         float mouseX = (float)curMouseX / (SCR_WIDTH * 0.5f) - 1.0f;
         float mouseY = 1.0f - curMouseY / (SCR_HEIGHT * 0.5f);
+        particleProps.position.x = mouseX;
+        particleProps.position.y = mouseY;
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), {mouseX, mouseY, 0.0f});
-        unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        particleSystem->OnRender(camera);
 
-        unsigned int viewProjectionLoc = glGetUniformLocation(ourShader.ID, "viewProjection");
-        glUniformMatrix4fv(viewProjectionLoc, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjectionMatrix()));
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -176,14 +141,10 @@ int main()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
+    //delete particleSystem;
     return 0;
 }
 
@@ -227,9 +188,7 @@ void mousebutton_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && GLFW_PRESS == action)
     {
-        curMouseX = lastX;
-        curMouseY = lastY;
-        clickMouse = true;
+        particleSystem->Emit(particleProps);
     }
 }
 

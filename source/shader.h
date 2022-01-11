@@ -14,7 +14,7 @@
 class Shader
 {
 public:
-	unsigned int ID;
+	unsigned int ID = 0;
 
 	Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	{
@@ -68,6 +68,13 @@ public:
 		// delete the shaders as they're linked into our program now and no longer necessary
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
+	}
+	~Shader()
+	{
+		if (ID)
+		{
+			glDeleteProgram(ID);
+		}
 	}
 	// active the shader
 	void use()
