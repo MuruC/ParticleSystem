@@ -7,8 +7,8 @@
 struct ParticleProps
 {
 	glm::vec2 position;
-	glm::vec2 velocity;
-	glm::vec2 acceleration;
+	glm::vec2 velocity = {0.0f, 0.0f};
+	glm::vec2 acceleration = {3.0f, 1.0f};
 	glm::vec4 colorBegin;
 	glm::vec4 colorEnd;
 	float size;

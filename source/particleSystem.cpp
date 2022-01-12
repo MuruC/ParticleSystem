@@ -1,4 +1,5 @@
 #include "particleSystem.h"
+#include <iostream>
 
 ParticleSystem::ParticleSystem()
 {
@@ -25,7 +26,11 @@ void ParticleSystem::Emit(const ParticleProps& particleProps)
 {
 	Particle& particle = particlePool[poolIndex];
 	particle.active = true;
+    particle.lifeRemaining = particleProps.lifeTime;
 	particle.position = particleProps.position;
+    particle.acceleration = particleProps.acceleration;
+    particle.velocity.x = (0.5 + GLCoreUtil::randomFloat() * std::pow(-1, rand() % 2)) * particle.acceleration.x;
+    particle.velocity.y = (1 + GLCoreUtil::randomFloat() * std::pow(-1, rand() % 2)) * particle.acceleration.y;
 	poolIndex = -- poolIndex % particlePool.size();
 }
 
@@ -35,6 +40,13 @@ void ParticleSystem::OnUpdate(float ts)
     {
         if (!particle.active)
             continue;
+        particle.lifeRemaining -= ts;
+        if (particle.lifeRemaining <= 0)
+        {
+            particle.active = false;
+            continue;
+        }
+        particle.position += particle.velocity * ts;
     }
 }
 
@@ -86,6 +98,7 @@ void ParticleSystem::OnRender(Camera& camera)
         if (!particle.active)
             continue;
         glm::mat4 model = glm::translate(glm::mat4(1.0f), { particle.position.x, particle.position.y, 0.0f });
+        
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

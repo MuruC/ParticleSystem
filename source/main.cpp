@@ -1,14 +1,7 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "glCore.h"
 #include "shader.h"
 #include "camera.h"
 #include <iostream>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "glutUtil.h"
 #include "particleSystem.h"
 
@@ -17,8 +10,8 @@ void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mousebutton_callback(GLFWwindow* window, int button, int action, int mods);
-glm::vec3 getViewPos(glm::mat4 pro, glm::mat4 view);
-void drawLine(glm::vec3 endPos, Shader shader);
+void run();
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -43,19 +36,9 @@ bool clickMouse = false;
 ParticleProps particleProps;
 ParticleSystem* particleSystem = new ParticleSystem;
 
-// origin square
-float vertices[] = {
-     // position        
-     0.1f,  0.1f, 0.5f, 
-     0.1f, -0.1f, 0.5f,
-    -0.1f, -0.1f, 0.5f,
-    -0.1f,  0.1f, 0.5f,
-};
-unsigned int indices[] =
-{
-    0, 1, 3, // first triangle
-    1, 2, 3  // second triangle
-};
+//timeStep
+float curFrameTime = 0.0f;
+float lastFrameTime = 0.0f;
 
 int main()
 {
@@ -130,7 +113,7 @@ int main()
         particleProps.position.y = mouseY;
 
         particleSystem->OnRender(camera);
-
+        run();
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -188,7 +171,10 @@ void mousebutton_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && GLFW_PRESS == action)
     {
-        particleSystem->Emit(particleProps);
+        for (int i = 0; i <= 5; ++i)
+        {
+            particleSystem->Emit(particleProps);
+        }
     }
 }
 
@@ -197,6 +183,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
+void run()
+{
+    curFrameTime = (float)glfwGetTime();
+    float timeStep = curFrameTime - lastFrameTime;
+    lastFrameTime = curFrameTime;
+    particleSystem->OnUpdate(timeStep);
+}
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
@@ -205,59 +198,4 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
-}
-
-glm::vec3 getViewPos(glm::mat4 pro, glm::mat4 view)
-{
-    float mouseX = (float)curMouseX / (SCR_WIDTH * 0.5f) - 1.0f;
-    float mouseY = curMouseY / (SCR_HEIGHT * 0.5f) - 1.0f;
-
-    GLint viewPort[4] = { 0, 0, SCR_WIDTH, SCR_HEIGHT };
-
-    GLfloat winX, winY, winZ;
-    double objectX = 0.0, objectY = 0.0, objectZ = 0.0;
-    winX = (float)curMouseX;
-    winY = (float)viewPort[3] - (float)curMouseY - 1.0f;
-    glm::vec3 screenPos = glm::vec3(winX, winY, 0.1f);
-    glm::vec3 worldPos = glm::vec3(objectX, objectY, objectZ);
-    glReadBuffer(GL_BACK);
-    glReadPixels(int(winX),int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
-    glutUtil::glhUnProjectVecf(winX, winY, winZ, glm::value_ptr(view), glm::value_ptr(pro), viewPort, glm::value_ptr(worldPos));
-    return worldPos;
-}
-
-void drawLine(glm::vec3 endPos, Shader shader)
-{
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    double lineVertices[] = { cameraPos[0], cameraPos[1], cameraPos[2], endPos[0], endPos[1], endPos[2] };
-    unsigned lineVAO, lineVBO;
-    glGenVertexArrays(1, &lineVAO);
-    glGenBuffers(1, &lineVBO);
-    glBindVertexArray(lineVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(lineVertices), lineVertices, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 3 * sizeof(double), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    shader.use();
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    // retrieve the matrix uniform locations
-    unsigned int viewLoc = glGetUniformLocation(shader.ID, "view");
-    // pass them to the shaders (3 different ways)
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
-
-    glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    //projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
-    shader.setMat4("projection", projection);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f,0.0f,0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    shader.setMat4("model", model);
-
-    glDrawArrays(GL_LINE_STRIP, 0, 2);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 }
