@@ -29,8 +29,12 @@ void ParticleSystem::Emit(const ParticleProps& particleProps)
     particle.lifeRemaining = particleProps.lifeTime;
 	particle.position = particleProps.position;
     particle.acceleration = particleProps.acceleration;
-    particle.velocity.x = (0.5 + GLCoreUtil::randomFloat() * std::pow(-1, rand() % 2)) * particle.acceleration.x;
-    particle.velocity.y = (1 + GLCoreUtil::randomFloat() * std::pow(-1, rand() % 2)) * particle.acceleration.y;
+    particle.sizeBegin = particleProps.sizeBegin;
+    particle.sizeEnd = particleProps.sizeEnd;
+    particle.velocity.x = (GLCoreUtil::randomFloat() - 0.5f) * particle.acceleration.x;
+    particle.velocity.y = (GLCoreUtil::randomFloat() - 0.5f) * particle.acceleration.y;
+    particle.colorBegin = particleProps.colorBegin;
+    particle.colorEnd = particleProps.colorEnd;
 	poolIndex = -- poolIndex % particlePool.size();
 }
 
@@ -90,6 +94,7 @@ void ParticleSystem::OnRender(Camera& camera)
 
         modelLoc = glGetUniformLocation(particleShader->ID, "model");
         viewProjectionLoc = glGetUniformLocation(particleShader->ID, "viewProjection");
+        colorLoc = glGetUniformLocation(particleShader->ID, "particleColor");
 	}
     particleShader->use();
     glUniformMatrix4fv(viewProjectionLoc, 1, GL_FALSE, glm::value_ptr(camera.viewProjectionMatrix));
@@ -97,9 +102,17 @@ void ParticleSystem::OnRender(Camera& camera)
     {
         if (!particle.active)
             continue;
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), { particle.position.x, particle.position.y, 0.0f });
-        
+
+        // Fade away particles
+        float life = particle.lifeRemaining / particle.lifeTime;
+        float size = std::lerp(particle.sizeEnd, particle.sizeBegin, life);
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), { particle.position.x, particle.position.y, 0.0f }) 
+                        * glm::scale(glm::mat4(1.0f), {size, size, 1.0f});
+        glm::vec4 color = particle.colorEnd + life * (particle.colorBegin - particle.colorEnd);
+
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform4fv(colorLoc, 1, glm::value_ptr(color));
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }

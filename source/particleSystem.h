@@ -9,9 +9,10 @@ struct ParticleProps
 	glm::vec2 position;
 	glm::vec2 velocity = {0.0f, 0.0f};
 	glm::vec2 acceleration = {3.0f, 1.0f};
-	glm::vec4 colorBegin;
-	glm::vec4 colorEnd;
-	float size;
+	glm::vec4 colorBegin = { 1.0f, 0.5f, 0.2f, 1.0f };
+	glm::vec4 colorEnd = { 1.0f, 0.1f, 0.05f, 0.05f };
+	float sizeBegin = 1.0f;
+	float sizeEnd = 0.3f;
 	float lifeTime = 1.0f;
 };
 
@@ -31,7 +32,8 @@ private:
 		glm::vec2 acceleration;
 		glm::vec4 colorBegin;
 		glm::vec4 colorEnd;
-		float size;
+		float sizeBegin;
+		float sizeEnd;
 		float lifeTime = 1.0f;
 		float lifeRemaining = 0.0f;
 		bool active = false;
@@ -45,4 +47,5 @@ private:
 	unsigned int EBO = 0;
 	unsigned int modelLoc = 0;
 	unsigned int viewProjectionLoc = 0;
+	unsigned int colorLoc = 0;
 };

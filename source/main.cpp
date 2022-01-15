@@ -112,7 +112,6 @@ int main()
         particleProps.position.x = mouseX;
         particleProps.position.y = mouseY;
 
-        particleSystem->OnRender(camera);
         run();
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -169,11 +168,19 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void mousebutton_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && GLFW_PRESS == action)
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
-        for (int i = 0; i <= 5; ++i)
+        if (GLFW_PRESS == action)
         {
-            particleSystem->Emit(particleProps);
+            clickMouse = true;
+            for (int i = 0; i <= 5; ++i)
+            {
+                particleSystem->Emit(particleProps);
+            }
+        }
+        else
+        {
+            clickMouse = false;
         }
     }
 }
@@ -189,6 +196,7 @@ void run()
     float timeStep = curFrameTime - lastFrameTime;
     lastFrameTime = curFrameTime;
     particleSystem->OnUpdate(timeStep);
+    particleSystem->OnRender(camera);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

@@ -1,8 +1,10 @@
 #include "GLCoreUtil.h"
 #include <stdlib.h>
-#include <time.h> 
+#include <random>
 float GLCoreUtil::randomFloat()
 {
-    srand((unsigned)time(NULL));
-    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	static std::mt19937 randomEngine;
+	std::uniform_int_distribution<std::mt19937::result_type> distribution;
+	randomEngine.seed(std::random_device()());
+	return (float)distribution(randomEngine) / (float)std::numeric_limits<uint32_t>::max();
 }
