@@ -11,7 +11,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mousebutton_callback(GLFWwindow* window, int button, int action, int mods);
 void run();
-
+void onImGuiRender();
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -197,7 +197,26 @@ void run()
     lastFrameTime = curFrameTime;
     particleSystem->OnUpdate(timeStep);
     particleSystem->OnRender(camera);
+    onImGuiRender();
 }
+
+void onImGuiRender()
+{
+    // ImGui here
+    // Tell OpenGL a new frame is about to begin
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::Begin("Settings");
+    ImGui::ColorEdit4("Birth Color", glm::value_ptr(particleProps.colorBegin));
+    ImGui::ColorEdit4("Death Color", glm::value_ptr(particleProps.colorEnd));
+    ImGui::DragFloat("Life Time", &particleProps.lifeTime, 0.1f, 0.0f, 1000.0f);
+    ImGui::End();
+    // Renders the ImGUI elements
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
