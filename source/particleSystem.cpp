@@ -72,6 +72,8 @@ void ParticleSystem::OnRender(Camera& camera)
             1, 2, 3  // second triangle
         };
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         // build and compile our shader program
         // ------------------------------------
         RegisterParticleShader();
