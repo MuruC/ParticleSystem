@@ -27,6 +27,7 @@ void ParticleSystem::Emit(const ParticleProps& particleProps)
 	Particle& particle = particlePool[poolIndex];
 	particle.active = true;
     particle.lifeRemaining = particleProps.lifeTime;
+    particle.rotation = GLCoreUtil::randomFloat() * 2.0f * glm::pi<float>();
 	particle.position = particleProps.position;
     particle.acceleration = particleProps.acceleration;
     particle.sizeBegin = particleProps.sizeBegin;
@@ -51,6 +52,7 @@ void ParticleSystem::OnUpdate(float ts)
             continue;
         }
         particle.position += particle.velocity * ts;
+        particle.rotation += 0.01f * ts;
     }
 }
 
@@ -110,6 +112,7 @@ void ParticleSystem::OnRender(Camera& camera)
         float size = std::lerp(particle.sizeEnd, particle.sizeBegin, life);
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), { particle.position.x, particle.position.y, 0.0f }) 
+                        * glm::rotate(glm::mat4(1.0f), particle.rotation, {0.0f, 0.0f, 1.0f})
                         * glm::scale(glm::mat4(1.0f), {size, size, 1.0f});
         glm::vec4 color = particle.colorEnd + life * (particle.colorBegin - particle.colorEnd);
 

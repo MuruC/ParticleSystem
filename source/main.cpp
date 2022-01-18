@@ -173,10 +173,6 @@ void mousebutton_callback(GLFWwindow* window, int button, int action, int mods)
         if (GLFW_PRESS == action)
         {
             clickMouse = true;
-            for (int i = 0; i <= 5; ++i)
-            {
-                particleSystem->Emit(particleProps);
-            }
         }
         else
         {
@@ -195,6 +191,13 @@ void run()
     curFrameTime = (float)glfwGetTime();
     float timeStep = curFrameTime - lastFrameTime;
     lastFrameTime = curFrameTime;
+    if (clickMouse)
+    {
+        for (int i = 0; i <= 1; ++i)
+        {
+            particleSystem->Emit(particleProps);
+        }
+    }
     particleSystem->OnUpdate(timeStep);
     particleSystem->OnRender(camera);
     onImGuiRender();

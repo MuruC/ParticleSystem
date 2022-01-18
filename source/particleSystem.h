@@ -32,6 +32,7 @@ private:
 		glm::vec2 acceleration;
 		glm::vec4 colorBegin;
 		glm::vec4 colorEnd;
+		float rotation = 0.0f;
 		float sizeBegin;
 		float sizeEnd;
 		float lifeTime = 1.0f;
