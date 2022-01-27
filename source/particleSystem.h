@@ -32,6 +32,7 @@ private:
 		glm::vec2 acceleration;
 		glm::vec4 colorBegin;
 		glm::vec4 colorEnd;
+		glm::vec4 currentColor;
 		float rotation = 0.0f;
 		float sizeBegin;
 		float sizeEnd;
@@ -42,6 +43,8 @@ private:
 	void RegisterParticleShader();
 	Shader* particleShader = nullptr;
 	std::vector<Particle> particlePool;
+	Particle* nonTransparentParticles[1000] = {};
+	Particle* transparentParticles[1000] = {};
 	uint32_t poolIndex = 999;
 	unsigned int VAO = 0;
 	unsigned int VBO = 0;
@@ -49,4 +52,7 @@ private:
 	unsigned int modelLoc = 0;
 	unsigned int viewProjectionLoc = 0;
 	unsigned int colorLoc = 0;
+	void SortAlphaArray(Particle** nums, int arrayLen);
+	int Partrition(Particle** nums, int l, int h);
+	void QuickSort(Particle** nums, int l, int h);
 };

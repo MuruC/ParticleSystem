@@ -1,5 +1,6 @@
 #include "particleSystem.h"
 #include <iostream>
+#include <vector>
 
 ParticleSystem::ParticleSystem()
 {
@@ -74,8 +75,8 @@ void ParticleSystem::OnRender(Camera& camera)
             1, 2, 3  // second triangle
         };
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         // build and compile our shader program
         // ------------------------------------
         RegisterParticleShader();
@@ -102,23 +103,121 @@ void ParticleSystem::OnRender(Camera& camera)
 	}
     particleShader->use();
     glUniformMatrix4fv(viewProjectionLoc, 1, GL_FALSE, glm::value_ptr(camera.viewProjectionMatrix));
+    int transParentIndex = 0;
+    int nonTransParentIndex = 0;
     for (auto& particle : particlePool)
     {
         if (!particle.active)
             continue;
-
-        // Fade away particles
         float life = particle.lifeRemaining / particle.lifeTime;
-        float size = std::lerp(particle.sizeEnd, particle.sizeBegin, life);
+        particle.currentColor = particle.colorEnd + life * (particle.colorBegin - particle.colorEnd);
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), { particle.position.x, particle.position.y, 0.0f }) 
-                        * glm::rotate(glm::mat4(1.0f), particle.rotation, {0.0f, 0.0f, 1.0f})
-                        * glm::scale(glm::mat4(1.0f), {size, size, 1.0f});
-        glm::vec4 color = particle.colorEnd + life * (particle.colorBegin - particle.colorEnd);
+        ParticleSystem::Particle* p = &particle;
+        if (particle.currentColor.a >= 1)
+        {
+            nonTransparentParticles[nonTransParentIndex] = p;
+            ++nonTransParentIndex;
+        }
+        else if (particle.currentColor.a < 1)
+        {
+            transparentParticles[transParentIndex] = p;
+            ++transParentIndex;
+        }
+    }
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    for (int i = 0; i <= nonTransParentIndex; i++)
+    {
+        ParticleSystem::Particle* p = nonTransparentParticles[i];
+        if (p == nullptr)
+        {
+            continue;
+        }
+        // Fade away particles
+        float life = p->lifeRemaining / p->lifeTime;
+        float size = std::lerp(p->sizeEnd, p->sizeBegin, life);
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), { p->position.x, p->position.y, 0.0f })
+            * glm::rotate(glm::mat4(1.0f), p->rotation, { 0.0f, 0.0f, 1.0f })
+            * glm::scale(glm::mat4(1.0f), { size, size, 1.0f });
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform4fv(colorLoc, 1, glm::value_ptr(color));
+        glUniform4fv(colorLoc, 1, glm::value_ptr(p->currentColor));
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    SortAlphaArray(transparentParticles, transParentIndex);
+    for (int j = transParentIndex; j >= 0; --j)
+    {
+        ParticleSystem::Particle* p = transparentParticles[j];
+        if (p == nullptr)
+        {
+            continue;
+        }
+        // Fade away particles
+        float life = p->lifeRemaining / p->lifeTime;
+        float size = std::lerp(p->sizeEnd, p->sizeBegin, life);
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), { p->position.x, p->position.y, 0.0f })
+            * glm::rotate(glm::mat4(1.0f), p->rotation, { 0.0f, 0.0f, 1.0f })
+            * glm::scale(glm::mat4(1.0f), { size, size, 1.0f });
+
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform4fv(colorLoc, 1, glm::value_ptr(p->currentColor));
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+}
+
+void ParticleSystem::SortAlphaArray(Particle** nums, int arrayLen) {
+    ParticleSystem::QuickSort(nums, 0, arrayLen);
+}
+
+int ParticleSystem::Partrition(Particle** nums, int l, int h)
+{
+    if (l >= h || nums == nullptr || nums[l] == nullptr)
+    {
+        return -1;
+    }
+    int pivot = nums[l]->currentColor.a;
+    int left = l + 1;
+    int right = h;
+    while (left <= right)
+    {
+        if (nums[right] == nullptr || nums[left] == nullptr)
+        {
+            return -1;
+        }
+        if (nums[right]->currentColor.a > pivot)
+        {
+            right--;
+        }
+        else if (nums[left]->currentColor.a <= pivot)
+        {
+            left++;
+        }
+        else
+        {
+            std::swap(nums[left], nums[right]);
+        }
+    }
+    std::swap(nums[l], nums[right]);
+    return right;
+}
+
+void ParticleSystem::QuickSort(Particle** nums, int l, int h)
+{
+    if (l > h || nums == nullptr)
+    {
+        return;
+    }
+    int j = ParticleSystem::Partrition(nums, l, h);
+    if (j != -1)
+    {
+        QuickSort(nums, l, j - 1);
+        QuickSort(nums, j + 1, h);
     }
 }
